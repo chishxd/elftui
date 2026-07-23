@@ -5,7 +5,16 @@ WINDOW *right_pane = NULL;
 const char *items[3] = {"Item 1", "Item 2", "Item 3"};
 
 int selected = 0;
-void create_panes() {
+
+void draw_content() {
+  for (int i = 0; i < 3; i++) {
+    if (i == selected) { wattron(left_pane, A_REVERSE); }
+    mvwprintw(left_pane, i + 2, 5, "%s", items[i]);
+    wattroff(left_pane, A_REVERSE);
+  }
+}
+
+void setup_panes() {
   int max_y, max_x;
   getmaxyx(stdscr, max_y, max_x);
 
@@ -29,11 +38,6 @@ void create_panes() {
   box(left_pane, 0, 0);
   box(right_pane, 0, 0);
 
-  for (int i = 0; i < 3; i++) {
-    if (i == selected) { wattron(left_pane, A_REVERSE); }
-    mvwprintw(left_pane, i + 2, 5, "%s", items[i]);
-    wattroff(left_pane, A_REVERSE);
-  }
 }
 
 int main() {
@@ -44,7 +48,8 @@ int main() {
   keypad(stdscr, TRUE);
   curs_set(FALSE);
 
-  create_panes();
+  setup_panes();
+  draw_content();
 
   refresh();
   wrefresh(left_pane);
@@ -58,16 +63,16 @@ int main() {
       clear();
       refresh();
 
-      create_panes();
+      setup_panes();
       break;
     case KEY_UP:
       selected = (selected == 0) ? 3 - 1 : selected - 1;
 
-      create_panes();
+      draw_content();
       break;
     case KEY_DOWN:
       selected = (selected == 3 - 1) ? 0 : selected + 1;
-      create_panes();
+      draw_content();
       break;
     default:
       break;
