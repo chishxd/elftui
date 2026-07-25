@@ -37,7 +37,6 @@ void setup_panes() {
 
   box(left_pane, 0, 0);
   box(right_pane, 0, 0);
-
 }
 
 int main() {
