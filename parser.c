@@ -14,6 +14,7 @@ typedef struct {
   const char *endian_str;
   int version;
   const char *os_abi;
+  uint8_t abi_version;
 } Elf_Metadata;
 
 /*
@@ -100,11 +101,13 @@ int parse_ident(const Elf_Header *header, Elf_Metadata *meta) {
     break;
   }
 
+  meta->abi_version = header->elf64.e_ident[EI_ABIVERSION];
+
   return 0;
 }
 
-void parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
-  parse_ident(header, meta);
+int parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
+  return parse_ident(header, meta);
 }
 
 int main() {
@@ -116,19 +119,23 @@ int main() {
   }
 
   Elf_Header header;
-  Elf_Metadata meta;
+  Elf_Metadata meta = {0};
 
   if (read(file, &header, sizeof(header)) != sizeof(header)) {
     perror("Error reading first 4 bytes");
     close(file);
     return 1;
   }
-  parse_elf_header(&header, &meta);
 
+  if (parse_elf_header(&header, &meta) != 0) {
+    close(file);
+    return 1;
+  }
   printf("%s\n", meta.class_str);
   printf("%s\n", meta.endian_str);
   printf("%d\n", meta.version);
   printf("%s\n", meta.os_abi);
+  printf("%d\n", meta.abi_version);
 
   close(file);
 
