@@ -9,6 +9,14 @@ typedef union {
   Elf64_Ehdr elf64;
 } Elf_Header;
 
+// Trying out writing some cool docs for first time :fear:
+
+/*
+ * @brief Parse 16 byte array from Elf32_Ehdr
+ * @details This function is a melted down version of main data extraction
+ * function below The separation was done becausde the array itself has 16 bytes
+ * filled with info.
+ */
 int parse_ident(const Elf_Header *header) {
   if (header->elf64.e_ident[EI_MAG0] != ELFMAG0 ||
       header->elf64.e_ident[EI_MAG1] != ELFMAG1 ||
@@ -32,14 +40,59 @@ int parse_ident(const Elf_Header *header) {
 
   switch (header->elf64.e_ident[EI_DATA]) {
   case ELFDATA2LSB:
-    printf("Little Endian");
+    printf("Little Endian\n");
     break;
   case ELFDATA2MSB:
-    printf("Big Endian");
+    printf("Big Endian\n");
     break;
   default:
-    fprintf(stderr, "Error: Invalid data encoding");
+    fprintf(stderr, "Error: Invalid data encoding\n");
     return 1;
+  }
+
+  switch (header->elf64.e_ident[EI_VERSION]) {
+  case EV_CURRENT:
+    printf("Current Version: %d\n", EV_CURRENT);
+    break;
+  default:
+    fprintf(stderr, "Error: Invalid Version");
+    return 1;
+  }
+
+  switch (header->elf64.e_ident[EI_OSABI]) {
+  case ELFOSABI_SYSV:
+    printf("OS ABI: UNIX System V\n");
+    break;
+  case ELFOSABI_HPUX:
+    printf("OS ABI: HP-UX\n");
+    break;
+  case ELFOSABI_NETBSD:
+    printf("OS ABI: NETBSD\n");
+    break;
+  case ELFOSABI_LINUX:
+    printf("OS ABI: LINUX\n");
+    break;
+  case ELFOSABI_SOLARIS:
+    printf("OS ABI: SOLARIS\n");
+    break;
+  case ELFOSABI_IRIX:
+    printf("OS ABI: IRIX\n");
+    break;
+  case ELFOSABI_FREEBSD:
+    printf("OS ABI: FREEBSD\n");
+    break;
+  case ELFOSABI_TRU64:
+    printf("OS ABI: TRU64\n");
+    break;
+  case ELFOSABI_ARM:
+    printf("OS ABI: ARM architecture\n");
+    break;
+  case ELFOSABI_STANDALONE:
+    printf("OS ABI: Stand-alone(embedded)\n");
+    break;
+  default:
+    fprintf(stderr, "OS ABI: UNIX System V\n");
+    break;
   }
 
   return 0;
