@@ -9,7 +9,12 @@ typedef union {
   Elf64_Ehdr elf64;
 } Elf_Header;
 
-// Trying out writing some cool docs for first time :fear:
+typedef struct {
+  const char *class_str;
+  const char *endian_str;
+  int version;
+  const char *os_abi;
+} Elf_Metadata;
 
 /*
  * @brief Parse 16 byte array from Elf32_Ehdr
@@ -17,7 +22,7 @@ typedef union {
  * function below The separation was done becausde the array itself has 16 bytes
  * filled with info.
  */
-int parse_ident(const Elf_Header *header) {
+int parse_ident(const Elf_Header *header, Elf_Metadata *meta) {
   if (header->elf64.e_ident[EI_MAG0] != ELFMAG0 ||
       header->elf64.e_ident[EI_MAG1] != ELFMAG1 ||
       header->elf64.e_ident[EI_MAG2] != ELFMAG2 ||
@@ -28,22 +33,22 @@ int parse_ident(const Elf_Header *header) {
 
   switch (header->elf64.e_ident[EI_CLASS]) {
   case ELFCLASS64:
-    printf("64-bit ELF detected\n");
+    meta->class_str = "64-bit";
     break;
   case ELFCLASS32:
-    printf("32-bit ELF detected\n");
+    meta->class_str = "32bit";
     break;
   default:
-    perror("Invalid ELF class");
+    perror("Invalid ELF class\n");
     return 1;
   }
 
   switch (header->elf64.e_ident[EI_DATA]) {
   case ELFDATA2LSB:
-    printf("Little Endian\n");
+    meta->endian_str = "Little Endian";
     break;
   case ELFDATA2MSB:
-    printf("Big Endian\n");
+    meta->endian_str = "Big Endian";
     break;
   default:
     fprintf(stderr, "Error: Invalid data encoding\n");
@@ -52,43 +57,43 @@ int parse_ident(const Elf_Header *header) {
 
   switch (header->elf64.e_ident[EI_VERSION]) {
   case EV_CURRENT:
-    printf("Current Version: %d\n", EV_CURRENT);
+    meta->version = EV_CURRENT;
     break;
   default:
-    fprintf(stderr, "Error: Invalid Version");
+    fprintf(stderr, "Error: Invalid Version\n");
     return 1;
   }
 
   switch (header->elf64.e_ident[EI_OSABI]) {
   case ELFOSABI_SYSV:
-    printf("OS ABI: UNIX System V\n");
+    meta->os_abi = "UNIX System V";
     break;
   case ELFOSABI_HPUX:
-    printf("OS ABI: HP-UX\n");
+    meta->os_abi = "HP-UX";
     break;
   case ELFOSABI_NETBSD:
-    printf("OS ABI: NETBSD\n");
+    meta->os_abi = "NETBSD";
     break;
   case ELFOSABI_LINUX:
-    printf("OS ABI: LINUX\n");
+    meta->os_abi = "linux";
     break;
   case ELFOSABI_SOLARIS:
-    printf("OS ABI: SOLARIS\n");
+    meta->os_abi = "Solaris";
     break;
   case ELFOSABI_IRIX:
-    printf("OS ABI: IRIX\n");
+    meta->os_abi = "IRIX";
     break;
   case ELFOSABI_FREEBSD:
-    printf("OS ABI: FREEBSD\n");
+    meta->os_abi = "FreeBSD";
     break;
   case ELFOSABI_TRU64:
-    printf("OS ABI: TRU64\n");
+    meta->os_abi = "TRU64";
     break;
   case ELFOSABI_ARM:
-    printf("OS ABI: ARM architecture\n");
+    meta->os_abi = "Arm architecture";
     break;
   case ELFOSABI_STANDALONE:
-    printf("OS ABI: Stand-alone(embedded)\n");
+    meta->os_abi = "Stand-alone(embedded)";
     break;
   default:
     fprintf(stderr, "OS ABI: UNIX System V\n");
@@ -98,7 +103,9 @@ int parse_ident(const Elf_Header *header) {
   return 0;
 }
 
-void parse_elf_header(const Elf_Header *header) { parse_ident(header); }
+void parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
+  parse_ident(header, meta);
+}
 
 int main() {
   int file = open("/usr/bin/ls", O_RDONLY);
@@ -109,13 +116,19 @@ int main() {
   }
 
   Elf_Header header;
+  Elf_Metadata meta;
 
   if (read(file, &header, sizeof(header)) != sizeof(header)) {
     perror("Error reading first 4 bytes");
     close(file);
     return 1;
   }
-  parse_elf_header(&header);
+  parse_elf_header(&header, &meta);
+
+  printf("%s\n", meta.class_str);
+  printf("%s\n", meta.endian_str);
+  printf("%d\n", meta.version);
+  printf("%s\n", meta.os_abi);
 
   close(file);
 
