@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 typedef union {
@@ -9,12 +10,15 @@ typedef union {
   Elf64_Ehdr elf64;
 } Elf_Header;
 
+// This struct extracts info about binary into the form I want for TUI
 typedef struct {
   const char *class_str;
   const char *endian_str;
   int version;
   const char *os_abi;
   uint8_t abi_version;
+  const char *type_str;
+  const char *machine_str;
 } Elf_Metadata;
 
 /*
@@ -107,7 +111,173 @@ int parse_ident(const Elf_Header *header, Elf_Metadata *meta) {
 }
 
 int parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
-  return parse_ident(header, meta);
+  if (parse_ident(header, meta) != 0) { return 1; }
+
+  if (header->elf64.e_ident[EI_CLASS] == ELFCLASS64) {
+
+    // Parsing the type of binary from header's e_type data member
+    // Note to me: check man elf and search e_type
+    switch (header->elf64.e_type) {
+    case ET_REL:
+      meta->type_str = "Relocatable File";
+      break;
+    case ET_EXEC:
+      meta->type_str = "Execultable File";
+      break;
+    case ET_DYN:
+      meta->type_str = "Shared Object File";
+      break;
+    case ET_CORE:
+      meta->type_str = "Core File";
+      break;
+    case ET_NONE:
+      meta->type_str = "Unknow File";
+      break;
+    default:
+      fprintf(stderr, "Something went wrong :(");
+      return 1;
+    }
+
+    // Parsing the type of architecture required by file
+    // again, open manpage and search e_machine
+    switch (header->elf64.e_machine) {
+    case EM_M32:
+      meta->machine_str = "AT&T WE 32100";
+      break;
+    case EM_SPARC:
+      meta->machine_str = "Sun Microsys SPARC";
+      break;
+    case EM_386:
+      meta->machine_str = "Intel 80386";
+      break;
+    case EM_68K:
+      meta->machine_str = "Motorola 68000";
+      break;
+    case EM_88K:
+      meta->machine_str = "Motorola 88000";
+      break;
+    case EM_MIPS:
+      meta->machine_str = "MIPS RS3000";
+      break;
+    case EM_PARISC:
+      meta->machine_str = "HP/PA";
+      break;
+    case EM_SPARC32PLUS:
+      meta->machine_str = "SPARC with enhanced instruction set";
+      break;
+    case EM_PPC:
+      meta->machine_str = "PowerPC";
+      break;
+    case EM_PPC64:
+      meta->machine_str = "PowerPC 64-bit";
+      break;
+    case EM_S390:
+      meta->machine_str = "IBM S/390";
+      break;
+    case EM_ARM:
+      meta->machine_str = "Advanced RISC Machines";
+      break;
+    case EM_SH:
+      meta->machine_str = "Renesas SuperH";
+      break;
+    case EM_SPARCV9:
+      meta->machine_str = "SPARC v9 64-bit";
+      break;
+    case EM_IA_64:
+      meta->machine_str = "Intel Itanium";
+      break;
+    case EM_X86_64:
+      meta->machine_str = "AMD x86-64";
+      break;
+    case EM_VAX:
+      meta->machine_str = "Dec Vax";
+      break;
+    }
+  }
+
+  else if (header->elf64.e_ident[EI_CLASS] == ELFCLASS32) {
+
+    // Parsing the type of binary from header's e_type data member
+    // Note to me: check man elf and search e_type
+    switch (header->elf32.e_type) {
+    case ET_REL:
+      meta->type_str = "Relocatable File";
+      break;
+    case ET_EXEC:
+      meta->type_str = "Execultable File";
+      break;
+    case ET_DYN:
+      meta->type_str = "Shared Object File";
+      break;
+    case ET_CORE:
+      meta->type_str = "Core File";
+      break;
+    case ET_NONE:
+      meta->type_str = "Unknow File";
+      break;
+    default:
+      fprintf(stderr, "Something went wrong :(");
+      return 1;
+    }
+
+    // Parsing the type of architecture required by file
+    // again, open manpage and search e_machine
+    switch (header->elf32.e_machine) {
+    case EM_M32:
+      meta->machine_str = "AT&T WE 32100";
+      break;
+    case EM_SPARC:
+      meta->machine_str = "Sun Microsys SPARC";
+      break;
+    case EM_386:
+      meta->machine_str = "Intel 80386";
+      break;
+    case EM_68K:
+      meta->machine_str = "Motorola 68000";
+      break;
+    case EM_88K:
+      meta->machine_str = "Motorola 88000";
+      break;
+    case EM_MIPS:
+      meta->machine_str = "MIPS RS3000";
+      break;
+    case EM_PARISC:
+      meta->machine_str = "HP/PA";
+      break;
+    case EM_SPARC32PLUS:
+      meta->machine_str = "SPARC with enhanced instruction set";
+      break;
+    case EM_PPC:
+      meta->machine_str = "PowerPC";
+      break;
+    case EM_PPC64:
+      meta->machine_str = "PowerPC 64-bit";
+      break;
+    case EM_S390:
+      meta->machine_str = "IBM S/390";
+      break;
+    case EM_ARM:
+      meta->machine_str = "Advanced RISC Machines";
+      break;
+    case EM_SH:
+      meta->machine_str = "Renesas SuperH";
+      break;
+    case EM_SPARCV9:
+      meta->machine_str = "SPARC v9 64-bit";
+      break;
+    case EM_IA_64:
+      meta->machine_str = "Intel Itanium";
+      break;
+    case EM_X86_64:
+      meta->machine_str = "AMD x86-64";
+      break;
+    case EM_VAX:
+      meta->machine_str = "Dec Vax";
+      break;
+    }
+  }
+
+  return 0;
 }
 
 int main() {
@@ -136,6 +306,8 @@ int main() {
   printf("%d\n", meta.version);
   printf("%s\n", meta.os_abi);
   printf("%d\n", meta.abi_version);
+  printf("%s\n", meta.type_str);
+  printf("%s\n", meta.machine_str);
 
   close(file);
 
