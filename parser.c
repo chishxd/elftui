@@ -37,72 +37,34 @@ int parse_ident(const Elf_Header *header, Elf_Metadata *meta) {
   }
 
   switch (header->elf64.e_ident[EI_CLASS]) {
-  case ELFCLASS64:
-    meta->class_str = "64-bit";
-    break;
-  case ELFCLASS32:
-    meta->class_str = "32bit";
-    break;
-  default:
-    perror("Invalid ELF class\n");
-    return 1;
+  case ELFCLASS64: meta->class_str = "64-bit"; break;
+  case ELFCLASS32: meta->class_str = "32bit"; break;
+  default: perror("Invalid ELF class\n"); return 1;
   }
 
   switch (header->elf64.e_ident[EI_DATA]) {
-  case ELFDATA2LSB:
-    meta->endian_str = "Little Endian";
-    break;
-  case ELFDATA2MSB:
-    meta->endian_str = "Big Endian";
-    break;
-  default:
-    fprintf(stderr, "Error: Invalid data encoding\n");
-    return 1;
+  case ELFDATA2LSB: meta->endian_str = "Little Endian"; break;
+  case ELFDATA2MSB: meta->endian_str = "Big Endian"; break;
+  default: fprintf(stderr, "Error: Invalid data encoding\n"); return 1;
   }
 
   switch (header->elf64.e_ident[EI_VERSION]) {
-  case EV_CURRENT:
-    meta->version = EV_CURRENT;
-    break;
-  default:
-    fprintf(stderr, "Error: Invalid Version\n");
-    return 1;
+  case EV_CURRENT: meta->version = EV_CURRENT; break;
+  default: fprintf(stderr, "Error: Invalid Version\n"); return 1;
   }
 
   switch (header->elf64.e_ident[EI_OSABI]) {
-  case ELFOSABI_SYSV:
-    meta->os_abi = "UNIX System V";
-    break;
-  case ELFOSABI_HPUX:
-    meta->os_abi = "HP-UX";
-    break;
-  case ELFOSABI_NETBSD:
-    meta->os_abi = "NETBSD";
-    break;
-  case ELFOSABI_LINUX:
-    meta->os_abi = "linux";
-    break;
-  case ELFOSABI_SOLARIS:
-    meta->os_abi = "Solaris";
-    break;
-  case ELFOSABI_IRIX:
-    meta->os_abi = "IRIX";
-    break;
-  case ELFOSABI_FREEBSD:
-    meta->os_abi = "FreeBSD";
-    break;
-  case ELFOSABI_TRU64:
-    meta->os_abi = "TRU64";
-    break;
-  case ELFOSABI_ARM:
-    meta->os_abi = "Arm architecture";
-    break;
-  case ELFOSABI_STANDALONE:
-    meta->os_abi = "Stand-alone(embedded)";
-    break;
-  default:
-    fprintf(stderr, "OS ABI: UNIX System V\n");
-    break;
+  case ELFOSABI_SYSV: meta->os_abi = "UNIX System V"; break;
+  case ELFOSABI_HPUX: meta->os_abi = "HP-UX"; break;
+  case ELFOSABI_NETBSD: meta->os_abi = "NETBSD"; break;
+  case ELFOSABI_LINUX: meta->os_abi = "linux"; break;
+  case ELFOSABI_SOLARIS: meta->os_abi = "Solaris"; break;
+  case ELFOSABI_IRIX: meta->os_abi = "IRIX"; break;
+  case ELFOSABI_FREEBSD: meta->os_abi = "FreeBSD"; break;
+  case ELFOSABI_TRU64: meta->os_abi = "TRU64"; break;
+  case ELFOSABI_ARM: meta->os_abi = "Arm architecture"; break;
+  case ELFOSABI_STANDALONE: meta->os_abi = "Stand-alone(embedded)"; break;
+  default: fprintf(stderr, "OS ABI: UNIX System V\n"); break;
   }
 
   meta->abi_version = header->elf64.e_ident[EI_ABIVERSION];
@@ -110,173 +72,55 @@ int parse_ident(const Elf_Header *header, Elf_Metadata *meta) {
   return 0;
 }
 
+static const char *get_type_name(uint16_t type) {
+  switch (type) {
+  case ET_REL: return "Relocatable File";
+  case ET_EXEC: return "Execultable File";
+  case ET_DYN: return "Shared Object File";
+  case ET_CORE: return "Core File";
+  case ET_NONE: return "Unknow File";
+  default: return "Unknown File";
+  }
+}
+
+static const char *get_machine_type(uint16_t type) {
+  switch (type) {
+  case EM_M32: return "AT&T WE 32100";
+  case EM_SPARC: return "Sun Microsys SPARC";
+  case EM_386: return "Intel 80386";
+  case EM_68K: return "Motorola 68000";
+  case EM_88K: return "Motorola 88000";
+  case EM_MIPS: return "MIPS RS3000";
+  case EM_PARISC: return "HP/PA";
+  case EM_SPARC32PLUS: return "SPARC with enhanced instruction set";
+  case EM_PPC: return "PowerPC";
+  case EM_PPC64: return "PowerPC 64-bit";
+  case EM_S390: return "IBM S/390";
+  case EM_ARM: return "Advanced RISC Machines";
+  case EM_SH: return "Renesas SuperH";
+  case EM_SPARCV9: return "SPARC v9 64-bit";
+  case EM_IA_64: return "Intel Itanium";
+  case EM_X86_64: return "AMD x86-64";
+  case EM_VAX: return "Dec Vax";
+  default: return "Unknown architecture";
+  }
+}
+
 int parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
   if (parse_ident(header, meta) != 0) { return 1; }
+  uint16_t raw_type;
+  uint16_t raw_machine;
 
   if (header->elf64.e_ident[EI_CLASS] == ELFCLASS64) {
-
-    // Parsing the type of binary from header's e_type data member
-    // Note to me: check man elf and search e_type
-    switch (header->elf64.e_type) {
-    case ET_REL:
-      meta->type_str = "Relocatable File";
-      break;
-    case ET_EXEC:
-      meta->type_str = "Execultable File";
-      break;
-    case ET_DYN:
-      meta->type_str = "Shared Object File";
-      break;
-    case ET_CORE:
-      meta->type_str = "Core File";
-      break;
-    case ET_NONE:
-      meta->type_str = "Unknow File";
-      break;
-    default:
-      fprintf(stderr, "Something went wrong :(");
-      return 1;
-    }
-
-    // Parsing the type of architecture required by file
-    // again, open manpage and search e_machine
-    switch (header->elf64.e_machine) {
-    case EM_M32:
-      meta->machine_str = "AT&T WE 32100";
-      break;
-    case EM_SPARC:
-      meta->machine_str = "Sun Microsys SPARC";
-      break;
-    case EM_386:
-      meta->machine_str = "Intel 80386";
-      break;
-    case EM_68K:
-      meta->machine_str = "Motorola 68000";
-      break;
-    case EM_88K:
-      meta->machine_str = "Motorola 88000";
-      break;
-    case EM_MIPS:
-      meta->machine_str = "MIPS RS3000";
-      break;
-    case EM_PARISC:
-      meta->machine_str = "HP/PA";
-      break;
-    case EM_SPARC32PLUS:
-      meta->machine_str = "SPARC with enhanced instruction set";
-      break;
-    case EM_PPC:
-      meta->machine_str = "PowerPC";
-      break;
-    case EM_PPC64:
-      meta->machine_str = "PowerPC 64-bit";
-      break;
-    case EM_S390:
-      meta->machine_str = "IBM S/390";
-      break;
-    case EM_ARM:
-      meta->machine_str = "Advanced RISC Machines";
-      break;
-    case EM_SH:
-      meta->machine_str = "Renesas SuperH";
-      break;
-    case EM_SPARCV9:
-      meta->machine_str = "SPARC v9 64-bit";
-      break;
-    case EM_IA_64:
-      meta->machine_str = "Intel Itanium";
-      break;
-    case EM_X86_64:
-      meta->machine_str = "AMD x86-64";
-      break;
-    case EM_VAX:
-      meta->machine_str = "Dec Vax";
-      break;
-    }
+    raw_type = header->elf64.e_type;
+    raw_machine = header->elf64.e_machine;
+  } else {
+    raw_type = header->elf32.e_type;
+    raw_machine = header->elf32.e_machine;
   }
 
-  else if (header->elf64.e_ident[EI_CLASS] == ELFCLASS32) {
-
-    // Parsing the type of binary from header's e_type data member
-    // Note to me: check man elf and search e_type
-    switch (header->elf32.e_type) {
-    case ET_REL:
-      meta->type_str = "Relocatable File";
-      break;
-    case ET_EXEC:
-      meta->type_str = "Execultable File";
-      break;
-    case ET_DYN:
-      meta->type_str = "Shared Object File";
-      break;
-    case ET_CORE:
-      meta->type_str = "Core File";
-      break;
-    case ET_NONE:
-      meta->type_str = "Unknow File";
-      break;
-    default:
-      fprintf(stderr, "Something went wrong :(");
-      return 1;
-    }
-
-    // Parsing the type of architecture required by file
-    // again, open manpage and search e_machine
-    switch (header->elf32.e_machine) {
-    case EM_M32:
-      meta->machine_str = "AT&T WE 32100";
-      break;
-    case EM_SPARC:
-      meta->machine_str = "Sun Microsys SPARC";
-      break;
-    case EM_386:
-      meta->machine_str = "Intel 80386";
-      break;
-    case EM_68K:
-      meta->machine_str = "Motorola 68000";
-      break;
-    case EM_88K:
-      meta->machine_str = "Motorola 88000";
-      break;
-    case EM_MIPS:
-      meta->machine_str = "MIPS RS3000";
-      break;
-    case EM_PARISC:
-      meta->machine_str = "HP/PA";
-      break;
-    case EM_SPARC32PLUS:
-      meta->machine_str = "SPARC with enhanced instruction set";
-      break;
-    case EM_PPC:
-      meta->machine_str = "PowerPC";
-      break;
-    case EM_PPC64:
-      meta->machine_str = "PowerPC 64-bit";
-      break;
-    case EM_S390:
-      meta->machine_str = "IBM S/390";
-      break;
-    case EM_ARM:
-      meta->machine_str = "Advanced RISC Machines";
-      break;
-    case EM_SH:
-      meta->machine_str = "Renesas SuperH";
-      break;
-    case EM_SPARCV9:
-      meta->machine_str = "SPARC v9 64-bit";
-      break;
-    case EM_IA_64:
-      meta->machine_str = "Intel Itanium";
-      break;
-    case EM_X86_64:
-      meta->machine_str = "AMD x86-64";
-      break;
-    case EM_VAX:
-      meta->machine_str = "Dec Vax";
-      break;
-    }
-  }
-
+  meta->type_str = get_type_name(raw_type);
+  meta->machine_str = get_machine_type(raw_machine);
   return 0;
 }
 
