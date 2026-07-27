@@ -24,7 +24,11 @@ void draw_right_pane(const Elf_Metadata *meta) {
   box(right_pane, 0, 0);
 
   if (selected == 0) {
+    wattron(right_pane, COLOR_PAIR(1) | A_BOLD);
     mvwprintw(right_pane, 1, 2, "---Elf Header Info---");
+    wattroff(right_pane, COLOR_PAIR(1) | A_BOLD);
+
+    wattron(right_pane, COLOR_PAIR(2));
     mvwprintw(right_pane, 3, 2, "Class:              %s", meta->class_str);
     mvwprintw(right_pane, 4, 2, "Data:               %s", meta->endian_str);
     mvwprintw(right_pane, 5, 2, "Version:            %d", meta->version);
@@ -33,17 +37,31 @@ void draw_right_pane(const Elf_Metadata *meta) {
     mvwprintw(right_pane, 8, 2, "ENTRY POINT:        0x%lx", meta->entry_point);
     mvwprintw(right_pane, 9, 2, "FLAGS:              0x%x", meta->flags);
     mvwprintw(right_pane, 10, 2, "Header Size:        %d", meta->eh_size);
+    mvwprintw(right_pane, 11, 2, "Type:               %s", meta->type_str);
+    mvwprintw(right_pane, 12, 2, "Machine:            %s", meta->machine_str);
+    wattroff(right_pane, COLOR_PAIR(2));
+
   } else if (selected == 1) {
+    wattron(right_pane, COLOR_PAIR(1) | A_BOLD);
     mvwprintw(right_pane, 1, 2, "---Program Headers---");
+    wattroff(right_pane, COLOR_PAIR(1) | A_BOLD);
+
+    wattron(right_pane, COLOR_PAIR(2));
     mvwprintw(right_pane, 3, 2, "Table Offset:       0x%lx", meta->ph_offset);
     mvwprintw(right_pane, 4, 2, "Entry Size:         %d", meta->ph_entry_size);
     mvwprintw(right_pane, 5, 2, "Total Entries:      %d", meta->ph_num);
+    wattroff(right_pane, COLOR_PAIR(2));
   } else if (selected == 2) {
+    wattron(right_pane, COLOR_PAIR(1) | A_BOLD);
     mvwprintw(right_pane, 1, 2, "---Section Headers---");
+    wattroff(right_pane, COLOR_PAIR(1) | A_BOLD);
+
+    wattron(right_pane, COLOR_PAIR(2));
     mvwprintw(right_pane, 3, 2, "Table Offset:       0x%lx", meta->sh_offset);
     mvwprintw(right_pane, 4, 2, "Entry Size:         %d", meta->sh_entry_size);
     mvwprintw(right_pane, 5, 2, "Total Entries:      %d", meta->sh_num);
     mvwprintw(right_pane, 6, 2, "Name Str Ndx:       %d", meta->sh_str_ndx);
+    wattroff(right_pane, COLOR_PAIR(2));
   }
 
   wrefresh(right_pane);
@@ -110,6 +128,17 @@ int main(int argc, char **argv) {
   noecho();
   keypad(stdscr, TRUE);
   curs_set(FALSE);
+
+  if (has_colors() == FALSE) {
+    endwin();
+    fprintf(stderr, "Your terminal does not support color\n");
+    return 1;
+  }
+  start_color();
+
+  init_pair(1, COLOR_CYAN, COLOR_BLACK);
+  init_pair(2, COLOR_GREEN, COLOR_BLACK);
+  init_pair(3, COLOR_YELLOW, COLOR_BLACK);
 
   setup_panes();
   refresh();
