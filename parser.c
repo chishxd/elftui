@@ -1,40 +1,8 @@
-#include <elf.h>
+#include "parser.h"
 #include <fcntl.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-typedef union {
-  Elf32_Ehdr elf32;
-  Elf64_Ehdr elf64;
-} Elf_Header;
-
-// This struct extracts info about binary into the form I want for TUI
-typedef struct {
-  const char *class_str;
-  const char *endian_str;
-  int version; // This one is from the array i.e e_ident[EI_VERSION]
-  const char *os_abi;
-  uint8_t abi_version;
-
-  //---- e_ident stuff ends here, now remaining are struct data members ----//
-
-  const char *type_str;
-  const char *machine_str;
-  uint32_t file_version; // This one is from the Struct i.e e_version
-  uint64_t entry_point;
-  uint64_t ph_offset;
-  uint64_t sh_offset;
-  uint32_t flags;
-  uint16_t eh_size;
-  uint16_t ph_entry_size;
-  uint16_t ph_num;
-  uint16_t sh_entry_size;
-  uint16_t sh_num;
-  uint16_t sh_str_ndx;
-
-} Elf_Metadata;
 
 /*
  * @brief Parse 16 byte array from Elf32_Ehdr
@@ -161,49 +129,5 @@ int parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
 
   meta->type_str = get_type_name(raw_type);
   meta->machine_str = get_machine_type(raw_machine);
-  return 0;
-}
-
-int main() {
-  int file = open("/usr/bin/ls", O_RDONLY);
-
-  if (file == -1) {
-    perror("Failed to open file");
-    return 1;
-  }
-
-  Elf_Header header;
-  Elf_Metadata meta = {0};
-
-  if (read(file, &header, sizeof(header)) != sizeof(header)) {
-    perror("Error reading first 4 bytes");
-    close(file);
-    return 1;
-  }
-
-  if (parse_elf_header(&header, &meta) != 0) {
-    close(file);
-    return 1;
-  }
-  printf("Class:                             %s\n", meta.class_str);
-  printf("Data:                              %s\n", meta.endian_str);
-  printf("Version (ident):                   %d\n", meta.version);
-  printf("OS/ABI:                            %s\n", meta.os_abi);
-  printf("ABI Version:                       %d\n", meta.abi_version);
-  printf("Type:                              %s\n", meta.type_str);
-  printf("Version:                           %d\n", meta.version);
-  printf("Entry point address:               0x%lx\n", meta.entry_point);
-  printf("Start of program headers:          %lx (bytes into file)\n",
-         meta.ph_offset);
-  printf("Start of section headers:          %lx (bytes into file)\n",
-         meta.sh_offset);
-  printf("Flags:                             0x%x\n", meta.flags);
-  printf("Size of this header:               %d (bytes)\n", meta.eh_size);
-  printf("Size of program headers:           %d (bytes)\n", meta.ph_entry_size);
-  printf("Number of program headers:         %d\n", meta.ph_num);
-  printf("Size of section headers:           %d (bytes)\n", meta.sh_entry_size);
-  printf("Number of section headers:         %d\n", meta.sh_num);
-  close(file);
-
   return 0;
 }

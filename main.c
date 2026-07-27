@@ -1,5 +1,10 @@
+#include "parser.h"
 #include <curses.h>
 
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
 WINDOW *left_pane = NULL;
 WINDOW *right_pane = NULL;
 const char *items[3] = {"Item 1", "Item 2", "Item 3"};
@@ -39,7 +44,36 @@ void setup_panes() {
   box(right_pane, 0, 0);
 }
 
-int main() {
+int main(int argc, char **argv) {
+
+  if (argc < 2) {
+    fprintf(stderr, "Usage: %s <elf-file>\n", argv[0]);
+    return 1;
+  }
+
+  const char *filename = argv[1];
+
+  // 2. Open and read the file into your Elf_Header
+  int file = open(filename, O_RDONLY);
+  if (file == -1) {
+    perror("Failed to open file");
+    return 1;
+  }
+
+  Elf_Header header;
+  Elf_Metadata meta = {0};
+
+  if (read(file, &header, sizeof(header)) != sizeof(header)) {
+    perror("Error reading ELF file");
+    close(file);
+    return 1;
+  }
+  close(file);
+
+  // 3. Extract the metadata
+  if (parse_elf_header(&header, &meta) != 0) {
+    return 1; // Terminate if it's not a valid ELF [1.1.5]
+  }
 
   initscr();
   cbreak();
@@ -73,8 +107,7 @@ int main() {
       selected = (selected == 3 - 1) ? 0 : selected + 1;
       draw_content();
       break;
-    default:
-      break;
+    default: break;
     }
     wrefresh(left_pane);
     wrefresh(right_pane);
