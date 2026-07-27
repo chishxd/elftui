@@ -19,6 +19,15 @@ void draw_content() {
   }
 }
 
+void draw_help_bar() {
+  wattron(stdscr, COLOR_PAIR(3) | A_BOLD);
+
+  mvprintw(LINES - 1, 2, "[q] Quit | [Up/Down] Navigate Menu");
+  wattroff(stdscr, COLOR_PAIR(3) | A_BOLD);
+
+  refresh();
+}
+
 void draw_right_pane(const Elf_Metadata *meta) {
   werase(right_pane);
   box(right_pane, 0, 0);
@@ -74,7 +83,7 @@ void setup_panes() {
   if (left_pane) delwin(left_pane);
   if (right_pane) delwin(right_pane);
 
-  int height = max_y;
+  int height = max_y - 1;
   int lwidth = max_x / 4;
 
   if (lwidth < 18) lwidth = 18;
@@ -144,7 +153,7 @@ int main(int argc, char **argv) {
   refresh();
   draw_content();
   draw_right_pane(&meta);
-
+  draw_help_bar();
   wrefresh(left_pane);
 
   int ch;
