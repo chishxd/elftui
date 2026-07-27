@@ -1,10 +1,10 @@
-elftui: main.c
-	gcc main.c -lncurses -o elftui
+elftui: main.c parser.c parser.h
+	gcc main.c parser.c -lncurses -o elftui
 
 run: elftui
-	./elftui
+	./elftui /bin/ls
 
 clean:
-	rm ./elftui
+	rm -f ./elftui
 
 .PHONY: run clean
