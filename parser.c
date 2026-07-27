@@ -131,12 +131,32 @@ int parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
     raw_machine = header->elf64.e_machine;
 
     meta->file_version = header->elf64.e_version;
+    meta->entry_point = header->elf64.e_entry;
+    meta->ph_offset = header->elf64.e_phoff;
+    meta->sh_offset = header->elf64.e_shoff;
+    meta->flags = header->elf64.e_flags;
+    meta->eh_size = header->elf64.e_ehsize;
+    meta->ph_entry_size = header->elf64.e_phentsize;
+    meta->ph_num = header->elf64.e_phnum;
+    meta->sh_entry_size = header->elf64.e_shentsize;
+    meta->sh_num = header->elf64.e_shnum;
+    meta->sh_str_ndx = header->elf64.e_shstrndx;
 
   } else {
     raw_type = header->elf32.e_type;
     raw_machine = header->elf32.e_machine;
 
     meta->file_version = header->elf32.e_version;
+    meta->entry_point = header->elf32.e_entry;
+    meta->ph_offset = header->elf32.e_phoff;
+    meta->sh_offset = header->elf32.e_shoff;
+    meta->flags = header->elf32.e_flags;
+    meta->eh_size = header->elf32.e_ehsize;
+    meta->ph_entry_size = header->elf32.e_phentsize;
+    meta->ph_num = header->elf32.e_phnum;
+    meta->sh_entry_size = header->elf32.e_shentsize;
+    meta->sh_num = header->elf32.e_shnum;
+    meta->sh_str_ndx = header->elf32.e_shstrndx;
   }
 
   meta->type_str = get_type_name(raw_type);
@@ -165,14 +185,24 @@ int main() {
     close(file);
     return 1;
   }
-  printf("%s\n", meta.class_str);
-  printf("%s\n", meta.endian_str);
-  printf("%d\n", meta.version);
-  printf("%s\n", meta.os_abi);
-  printf("%d\n", meta.abi_version);
-  printf("%s\n", meta.type_str);
-  printf("%s\n", meta.machine_str);
-
+  printf("Class:                             %s\n", meta.class_str);
+  printf("Data:                              %s\n", meta.endian_str);
+  printf("Version (ident):                   %d\n", meta.version);
+  printf("OS/ABI:                            %s\n", meta.os_abi);
+  printf("ABI Version:                       %d\n", meta.abi_version);
+  printf("Type:                              %s\n", meta.type_str);
+  printf("Version:                           %d\n", meta.version);
+  printf("Entry point address:               0x%lx\n", meta.entry_point);
+  printf("Start of program headers:          %lx (bytes into file)\n",
+         meta.ph_offset);
+  printf("Start of section headers:          %lx (bytes into file)\n",
+         meta.sh_offset);
+  printf("Flags:                             0x%x\n", meta.flags);
+  printf("Size of this header:               %d (bytes)\n", meta.eh_size);
+  printf("Size of program headers:           %d (bytes)\n", meta.ph_entry_size);
+  printf("Number of program headers:         %d\n", meta.ph_num);
+  printf("Size of section headers:           %d (bytes)\n", meta.sh_entry_size);
+  printf("Number of section headers:         %d\n", meta.sh_num);
   close(file);
 
   return 0;
