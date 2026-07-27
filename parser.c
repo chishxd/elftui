@@ -14,11 +14,26 @@ typedef union {
 typedef struct {
   const char *class_str;
   const char *endian_str;
-  int version;
+  int version; // This one is from the array i.e e_ident[EI_VERSION]
   const char *os_abi;
   uint8_t abi_version;
+
+  //---- e_ident stuff ends here, now remaining are struct data members ----//
+
   const char *type_str;
   const char *machine_str;
+  uint32_t file_version; // This one is from the Struct i.e e_version
+  uint64_t entry_point;
+  uint64_t ph_offset;
+  uint64_t sh_offset;
+  uint32_t flags;
+  uint16_t eh_size;
+  uint16_t ph_entry_size;
+  uint16_t ph_num;
+  uint16_t sh_entry_size;
+  uint16_t sh_num;
+  uint16_t sh_str_ndx;
+
 } Elf_Metadata;
 
 /*
@@ -114,9 +129,14 @@ int parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
   if (header->elf64.e_ident[EI_CLASS] == ELFCLASS64) {
     raw_type = header->elf64.e_type;
     raw_machine = header->elf64.e_machine;
+
+    meta->file_version = header->elf64.e_version;
+
   } else {
     raw_type = header->elf32.e_type;
     raw_machine = header->elf32.e_machine;
+
+    meta->file_version = header->elf32.e_version;
   }
 
   meta->type_str = get_type_name(raw_type);
