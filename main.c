@@ -7,7 +7,7 @@
 #include <unistd.h>
 WINDOW *left_pane = NULL;
 WINDOW *right_pane = NULL;
-const char *items[3] = {"Item 1", "Item 2", "Item 3"};
+const char *items[3] = {"ELF Header", "Program Headers", "Section Headers"};
 
 int selected = 0;
 
@@ -17,6 +17,36 @@ void draw_content() {
     mvwprintw(left_pane, i + 2, 5, "%s", items[i]);
     wattroff(left_pane, A_REVERSE);
   }
+}
+
+void draw_right_pane(const Elf_Metadata *meta) {
+  werase(right_pane);
+  box(right_pane, 0, 0);
+
+  if (selected == 0) {
+    mvwprintw(right_pane, 1, 2, "---Elf Header Info---");
+    mvwprintw(right_pane, 3, 2, "Class:              %s", meta->class_str);
+    mvwprintw(right_pane, 4, 2, "Data:               %s", meta->endian_str);
+    mvwprintw(right_pane, 5, 2, "Version:            %d", meta->version);
+    mvwprintw(right_pane, 6, 2, "OS/ABI:             %s", meta->os_abi);
+    mvwprintw(right_pane, 7, 2, "ABI VERSION:        %d", meta->abi_version);
+    mvwprintw(right_pane, 8, 2, "ENTRY POINT:        0x%lx", meta->entry_point);
+    mvwprintw(right_pane, 9, 2, "FLAGS:              0x%x", meta->flags);
+    mvwprintw(right_pane, 10, 2, "Header Size:        %d", meta->eh_size);
+  } else if (selected == 1) {
+    mvwprintw(right_pane, 1, 2, "---Program Headers---");
+    mvwprintw(right_pane, 3, 2, "Table Offset:       0x%lx", meta->ph_offset);
+    mvwprintw(right_pane, 4, 2, "Entry Size:         %d", meta->ph_entry_size);
+    mvwprintw(right_pane, 5, 2, "Total Entries:      %d", meta->ph_num);
+  } else if (selected == 2) {
+    mvwprintw(right_pane, 1, 2, "---Section Headers---");
+    mvwprintw(right_pane, 3, 2, "Table Offset:       0x%lx", meta->sh_offset);
+    mvwprintw(right_pane, 4, 2, "Entry Size:         %d", meta->sh_entry_size);
+    mvwprintw(right_pane, 5, 2, "Total Entries:      %d", meta->sh_num);
+    mvwprintw(right_pane, 6, 2, "Name Str Ndx:       %d", meta->sh_str_ndx);
+  }
+
+  wrefresh(right_pane);
 }
 
 void setup_panes() {
@@ -72,7 +102,7 @@ int main(int argc, char **argv) {
 
   // 3. Extract the metadata
   if (parse_elf_header(&header, &meta) != 0) {
-    return 1; // Terminate if it's not a valid ELF [1.1.5]
+    return 1; // Terminate if it's not a valid ELF
   }
 
   initscr();
@@ -82,11 +112,11 @@ int main(int argc, char **argv) {
   curs_set(FALSE);
 
   setup_panes();
-  draw_content();
-
   refresh();
+  draw_content();
+  draw_right_pane(&meta);
+
   wrefresh(left_pane);
-  wrefresh(right_pane);
 
   int ch;
 
@@ -97,16 +127,21 @@ int main(int argc, char **argv) {
       refresh();
 
       setup_panes();
+      draw_content();
+      draw_right_pane(&meta);
       break;
     case KEY_UP:
       selected = (selected == 0) ? 3 - 1 : selected - 1;
 
       draw_content();
+      draw_right_pane(&meta);
       break;
     case KEY_DOWN:
       selected = (selected == 3 - 1) ? 0 : selected + 1;
       draw_content();
+      draw_right_pane(&meta);
       break;
+
     default: break;
     }
     wrefresh(left_pane);
