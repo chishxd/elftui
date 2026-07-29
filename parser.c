@@ -1,5 +1,8 @@
 #include "parser.h"
+#include <elf.h>
+#include <endian.h>
 #include <fcntl.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -93,39 +96,91 @@ int parse_elf_header(const Elf_Header *header, Elf_Metadata *meta) {
   if (parse_ident(header, meta) != 0) { return 1; }
   uint16_t raw_type;
   uint16_t raw_machine;
+  uint32_t raw_version;
+  uint64_t raw_entry;
+  uint64_t raw_ph_offset;
+  uint64_t raw_sh_offset;
+  uint32_t raw_flags;
+  uint16_t raw_eh_size;
+  uint16_t raw_ph_entry_size;
+  uint16_t raw_ph_num;
+  uint16_t raw_sh_entry_size;
+  uint16_t raw_sh_num;
+  uint16_t raw_sh_str_ndx;
 
   if (header->elf64.e_ident[EI_CLASS] == ELFCLASS64) {
     raw_type = header->elf64.e_type;
     raw_machine = header->elf64.e_machine;
 
-    meta->file_version = header->elf64.e_version;
-    meta->entry_point = header->elf64.e_entry;
-    meta->ph_offset = header->elf64.e_phoff;
-    meta->sh_offset = header->elf64.e_shoff;
-    meta->flags = header->elf64.e_flags;
-    meta->eh_size = header->elf64.e_ehsize;
-    meta->ph_entry_size = header->elf64.e_phentsize;
-    meta->ph_num = header->elf64.e_phnum;
-    meta->sh_entry_size = header->elf64.e_shentsize;
-    meta->sh_num = header->elf64.e_shnum;
-    meta->sh_str_ndx = header->elf64.e_shstrndx;
-
+    raw_version = header->elf64.e_version;
+    raw_entry = header->elf64.e_entry;
+    raw_ph_offset = header->elf64.e_phoff;
+    raw_sh_offset = header->elf64.e_shoff;
+    raw_flags = header->elf64.e_flags;
+    raw_eh_size = header->elf64.e_ehsize;
+    raw_ph_entry_size = header->elf64.e_phentsize;
+    raw_ph_num = header->elf64.e_phnum;
+    raw_sh_entry_size = header->elf64.e_shentsize;
+    raw_sh_num = header->elf64.e_shnum;
+    raw_sh_str_ndx = header->elf64.e_shstrndx;
   } else {
     raw_type = header->elf32.e_type;
     raw_machine = header->elf32.e_machine;
 
-    meta->file_version = header->elf32.e_version;
-    meta->entry_point = header->elf32.e_entry;
-    meta->ph_offset = header->elf32.e_phoff;
-    meta->sh_offset = header->elf32.e_shoff;
-    meta->flags = header->elf32.e_flags;
-    meta->eh_size = header->elf32.e_ehsize;
-    meta->ph_entry_size = header->elf32.e_phentsize;
-    meta->ph_num = header->elf32.e_phnum;
-    meta->sh_entry_size = header->elf32.e_shentsize;
-    meta->sh_num = header->elf32.e_shnum;
-    meta->sh_str_ndx = header->elf32.e_shstrndx;
+    raw_version = header->elf32.e_version;
+    raw_entry = header->elf32.e_entry;
+    raw_ph_offset = header->elf32.e_phoff;
+    raw_sh_offset = header->elf32.e_shoff;
+    raw_flags = header->elf32.e_flags;
+    raw_eh_size = header->elf32.e_ehsize;
+    raw_ph_entry_size = header->elf32.e_phentsize;
+    raw_ph_num = header->elf32.e_phnum;
+    raw_sh_entry_size = header->elf32.e_shentsize;
+    raw_sh_num = header->elf32.e_shnum;
+    raw_sh_str_ndx = header->elf32.e_shstrndx;
   }
+
+  int need_swap = 0;
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  if (header->elf64.e_ident[EI_DATA] == ELFDATA2MSB) { need_swap = 1; }
+#elif __BYTE_ORDER == __BIG_ENDIAN
+  if (header->elf64.e_ident[EI_DATA] == ELFDATA2LSB) { need_swap = 1; }
+#endif
+
+  if (need_swap) {
+    raw_type = __builtin_bswap16(raw_type);
+    raw_machine = __builtin_bswap16(raw_machine);
+    raw_version = __builtin_bswap32(raw_version);
+    raw_flags = __builtin_bswap32(raw_flags);
+    raw_eh_size = __builtin_bswap16(raw_eh_size);
+    raw_ph_entry_size = __builtin_bswap16(raw_ph_entry_size);
+    raw_ph_num = __builtin_bswap16(raw_ph_num);
+    raw_sh_entry_size = __builtin_bswap16(raw_sh_entry_size);
+    raw_sh_num = __builtin_bswap16(raw_sh_num);
+    raw_sh_str_ndx = __builtin_bswap16(raw_sh_str_ndx);
+
+    if (header->elf64.e_ident[EI_CLASS] == ELFCLASS64) {
+      raw_entry = __builtin_bswap64(raw_entry);
+      raw_ph_offset = __builtin_bswap64(raw_ph_offset);
+      raw_sh_offset = __builtin_bswap64(raw_sh_offset);
+    } else {
+      raw_entry = __builtin_bswap32((uint32_t)raw_entry);
+      raw_ph_offset = __builtin_bswap32((uint32_t)raw_ph_offset);
+      raw_sh_offset = __builtin_bswap32((uint32_t)raw_sh_offset);
+    }
+  }
+
+  meta->version = raw_version;
+  meta->entry_point = raw_entry;
+  meta->flags = raw_flags;
+  meta->eh_size = raw_eh_size;
+  meta->ph_offset = raw_ph_offset;
+  meta->ph_entry_size = raw_ph_entry_size;
+  meta->ph_num = raw_ph_num;
+  meta->sh_offset = raw_sh_offset;
+  meta->sh_entry_size = raw_sh_entry_size;
+  meta->sh_num = raw_sh_num;
+  meta->sh_str_ndx = raw_sh_str_ndx;
 
   meta->type_str = get_type_name(raw_type);
   meta->machine_str = get_machine_type(raw_machine);
