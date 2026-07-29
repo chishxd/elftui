@@ -110,7 +110,6 @@ int main(int argc, char **argv) {
 
   const char *filename = argv[1];
 
-  // 2. Open and read the file into your Elf_Header
   int file = open(filename, O_RDONLY);
   if (file == -1) {
     perror("Failed to open file");
@@ -120,17 +119,18 @@ int main(int argc, char **argv) {
   Elf_Header header;
   Elf_Metadata meta = {0};
 
-  if (read(file, &header, sizeof(header)) != sizeof(header)) {
-    perror("Error reading ELF file");
+  ssize_t bytes_read = read(file, &header, sizeof(header));
+  if (bytes_read == -1) {
+    perror("Failed to read ELF file");
+    close(file);
+    return 1;
+  } else if (bytes_read < sizeof(header)) {
+    fprintf(stderr, "File too small to be a valid ELF binary file\n");
     close(file);
     return 1;
   }
-  close(file);
 
-  // 3. Extract the metadata
-  if (parse_elf_header(&header, &meta) != 0) {
-    return 1; // Terminate if it's not a valid ELF
-  }
+  if (parse_elf_header(&header, &meta) != 0) { return 1; }
 
   initscr();
   cbreak();

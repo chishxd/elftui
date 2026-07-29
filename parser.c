@@ -15,7 +15,7 @@ int parse_ident(const Elf_Header *header, Elf_Metadata *meta) {
       header->elf64.e_ident[EI_MAG1] != ELFMAG1 ||
       header->elf64.e_ident[EI_MAG2] != ELFMAG2 ||
       header->elf64.e_ident[EI_MAG3] != ELFMAG3) {
-    fprintf(stderr, "Error: Invalid ELF File!");
+    fprintf(stderr, "Error: Invalid ELF File!\n");
     return 1;
   }
 
@@ -47,7 +47,7 @@ int parse_ident(const Elf_Header *header, Elf_Metadata *meta) {
   case ELFOSABI_TRU64: meta->os_abi = "TRU64"; break;
   case ELFOSABI_ARM: meta->os_abi = "Arm architecture"; break;
   case ELFOSABI_STANDALONE: meta->os_abi = "Stand-alone(embedded)"; break;
-  default: fprintf(stderr, "OS ABI: UNIX System V\n"); break;
+  default: meta->os_abi = "Unknown"; break;
   }
 
   meta->abi_version = header->elf64.e_ident[EI_ABIVERSION];
